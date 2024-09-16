@@ -292,8 +292,14 @@ exports.loginConQR = async (req, res) => {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
+        // Validar si la cuenta está bloqueada
+        if (user.isAccountLocked()) {
+            return res.status(403).json({ message: 'Cuenta bloqueada. Contacte al administrador.' });
+        }
+
         // Obtener la fecha y hora actual en la zona horaria de La Paz
         const nowLaPaz = moment().tz('America/La_Paz');
+
         // Verificar si el token QR es válido (no expirado y no usado)
         const qrToken = user.qrTokens.find(
             (qr) => qr.token === token && moment(qr.expiresAt).isAfter(nowLaPaz) && !qr.used
@@ -305,6 +311,48 @@ exports.loginConQR = async (req, res) => {
 
         // Marcar el token como usado
         qrToken.used = true;
+
+        // Capturar la hora y fecha exacta del servidor
+        const loginDateTime = new Date();
+
+        // Registrar la sesión con información de IP y dispositivo (como en el login normal)
+        const ua = useragent.parse(req.headers['user-agent']);
+        let browser = `${ua.browser} ${ua.version}`;
+        let device = ua.platform;
+
+        if (ua.isDesktop) {
+            device = 'Desktop';
+        } else if (ua.isMobile) {
+            device = 'Mobile';
+        }
+
+        if (ua.isBot) {
+            browser = 'Bot';
+        } else if (ua.source.includes('Thunder Client')) {
+            browser = 'Thunder Client';
+        } else if (ua.source.includes('Postman')) {
+            browser = 'Postman';
+        }
+
+        let ip = req.ip;
+        if (ip.startsWith('::ffff:')) {
+            ip = ip.split(':').pop();
+        }
+
+        const sessionInfo = {
+            ip: ip,
+            browser: browser || 'unknown',
+            device: device || 'unknown',
+            loginDate: loginDateTime,  // Añadimos la fecha y hora del servidor al registro
+            method: 'QR'  // Indicamos que este login fue por QR
+        };
+
+        user.sessions.push(sessionInfo);
+        if (user.sessions.length > 5) {
+            user.sessions.shift();  // Limitar a las últimas 5 sesiones
+        }
+
+        // Guardar la sesión y el token usado
         await user.save();
 
         // Generar un token de sesión normal como en el login manual
@@ -315,7 +363,7 @@ exports.loginConQR = async (req, res) => {
         );
 
         // Enviar el token de sesión
-        res.status(200).json({ message: 'Sesión iniciada', token: sessionToken });
+        res.status(200).json({ message: 'Sesión iniciada por QR', token: sessionToken });
     } catch (error) {
         console.error('Error al iniciar sesión con QR:', error);
         if (error.name === 'TokenExpiredError') {
