@@ -3,10 +3,11 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const User = require('../models/User');
-const useragent = require('express-useragent');
+const DeviceDetector = require('node-device-detector');
+
+
 const path = require('path');
 const QRCode = require('qrcode');
-const Jimp = require('jimp');
 const moment = require('moment-timezone'); // Importamos moment-timezone
 const { createCanvas, loadImage } = require('canvas');
 
@@ -39,49 +40,71 @@ exports.loginUser = async (req, res) => {
 
         await user.resetFailedLoginAttempts();
 
-        // Capturar la hora y fecha exacta del servidor (puede cambiar dependiendo del servidor)
+        // Capturar la hora y fecha exacta del servidor
         const loginDateTime = new Date();
 
         // Capturar el último inicio de sesión en la base de datos
         user.lastLogin = loginDateTime;
 
-        const ua = useragent.parse(req.headers['user-agent']);
-        let browser = `${ua.browser} ${ua.version}`;
-        let device = ua.platform;
+        // Detectar el dispositivo con node-device-detector
+        const deviceDetector = new DeviceDetector({
+            clientIndexes: true,
+            deviceIndexes: true,
+            deviceAliasCode: false
+        });
 
-        if (ua.isDesktop) {
-            device = 'Desktop';
-        } else if (ua.isMobile) {
-            device = 'Mobile';
+        const userAgent = req.headers['user-agent'];
+        const device = deviceDetector.detect(userAgent);
+
+        // Valores por defecto para el dispositivo y navegador
+        let deviceDetails = 'Unknown device';
+        let browser = 'Unknown browser';
+
+        // Procesar la información del dispositivo
+        if (device.device && device.device.type === 'smartphone') {
+            const os = device.os ? `${device.os.name} ${device.os.version}` : 'Unknown OS';
+
+            // Verificar si la marca y el modelo están vacíos
+            if (!device.device.brand && !device.device.model) {
+                deviceDetails = `Android ${device.os.version}`;  // Mostrar solo la versión de Android si no hay detalles del dispositivo
+            } else {
+                const brand = device.device.brand || 'Unknown brand';
+                const model = device.device.model || 'Unknown model';
+                deviceDetails = `${brand} ${model} (${os})`.trim();
+            }
+        } else if (device.device && device.device.type === 'tablet') {
+            const os = device.os ? `${device.os.name} ${device.os.version}` : 'Unknown OS';
+            const brand = device.device.brand || 'Unknown brand';
+            const model = device.device.model || 'Unknown model';
+            deviceDetails = `${brand} ${model} (Tablet, ${os})`.trim();
+        } else if (device.os && (device.os.name.toLowerCase().includes('windows') || device.os.name.toLowerCase().includes('mac'))) {
+            browser = `${device.client.name || 'Unknown browser'} ${device.client.version || ''}`;
+            deviceDetails = `Desktop (${device.os.name} ${device.os.version})`;
         }
 
-        if (ua.isBot) {
-            browser = 'Bot';
-        } else if (ua.source.includes('Thunder Client')) {
-            browser = 'Thunder Client';
-        } else if (ua.source.includes('Postman')) {
-            browser = 'Postman';
-        }
-
+        // Obtener la IP del cliente
         let ip = req.ip;
         if (ip.startsWith('::ffff:')) {
             ip = ip.split(':').pop();
         }
 
+        // Información de la sesión a guardar
         const sessionInfo = {
             ip: ip,
-            browser: browser || 'unknown',
-            device: device || 'unknown',
-            loginDate: loginDateTime,  // Añadimos la fecha y hora del servidor al registro
+            browser: `${device.client.name || 'Unknown browser'} ${device.client.version || ''}`,
+            device: deviceDetails,
+            loginDate: loginDateTime,
         };
 
+        // Guardar la sesión en el usuario
         user.sessions.push(sessionInfo);
         if (user.sessions.length > 5) {
-            user.sessions.shift();
+            user.sessions.shift(); // Eliminar la sesión más antigua
         }
 
         await user.save();
 
+        // Generar el token JWT
         const token = jwt.sign(
             { id: user._id, email: user.email, role: user.role },
             process.env.JWT_SECRET || 'mysecretkey',
@@ -315,38 +338,58 @@ exports.loginConQR = async (req, res) => {
         // Capturar la hora y fecha exacta del servidor
         const loginDateTime = new Date();
 
-        // Registrar la sesión con información de IP y dispositivo (como en el login normal)
-        const ua = useragent.parse(req.headers['user-agent']);
-        let browser = `${ua.browser} ${ua.version}`;
-        let device = ua.platform;
+        // Detectar el dispositivo con node-device-detector
+        const deviceDetector = new DeviceDetector({
+            clientIndexes: true,
+            deviceIndexes: true,
+            deviceAliasCode: false
+        });
 
-        if (ua.isDesktop) {
-            device = 'Desktop';
-        } else if (ua.isMobile) {
-            device = 'Mobile';
+        const userAgent = req.headers['user-agent'];
+        const device = deviceDetector.detect(userAgent);
+
+        // Valores por defecto
+        let deviceDetails = 'Unknown device';
+        let browser = 'Unknown browser';
+
+        // Procesar la información del dispositivo
+        if (device.device && device.device.type === 'smartphone') {
+            const os = device.os ? `${device.os.name} ${device.os.version}` : 'Unknown OS';
+
+            // Verificar si la marca y el modelo están vacíos
+            if (!device.device.brand && !device.device.model) {
+                deviceDetails = `Android ${device.os.version}`;  // Mostrar solo la versión de Android si no hay detalles del dispositivo
+            } else {
+                const brand = device.device.brand || 'Unknown brand';
+                const model = device.device.model || 'Unknown model';
+                deviceDetails = `${brand} ${model} (${os})`.trim();
+            }
+        } else if (device.device && device.device.type === 'tablet') {
+            const os = device.os ? `${device.os.name} ${device.os.version}` : 'Unknown OS';
+            const brand = device.device.brand || 'Unknown brand';
+            const model = device.device.model || 'Unknown model';
+            deviceDetails = `${brand} ${model} (Tablet, ${os})`.trim();
+        } else if (device.os && (device.os.name.toLowerCase().includes('windows') || device.os.name.toLowerCase().includes('mac'))) {
+            browser = `${device.client.name || 'Unknown browser'} ${device.client.version || ''}`;
+            deviceDetails = `Desktop (${device.os.name} ${device.os.version})`;
         }
 
-        if (ua.isBot) {
-            browser = 'Bot';
-        } else if (ua.source.includes('Thunder Client')) {
-            browser = 'Thunder Client';
-        } else if (ua.source.includes('Postman')) {
-            browser = 'Postman';
-        }
-
+        // Obtener la IP del cliente
         let ip = req.ip;
         if (ip.startsWith('::ffff:')) {
             ip = ip.split(':').pop();
         }
 
+        // Información de la sesión a guardar
         const sessionInfo = {
             ip: ip,
-            browser: browser || 'unknown',
-            device: device || 'unknown',
-            loginDate: loginDateTime,  // Añadimos la fecha y hora del servidor al registro
+            browser: `${device.client.name || 'Unknown browser'} ${device.client.version || ''}`,
+            device: deviceDetails,
+            loginDate: loginDateTime,
             method: 'QR'  // Indicamos que este login fue por QR
         };
 
+        // Guardar la sesión en el usuario
         user.sessions.push(sessionInfo);
         if (user.sessions.length > 5) {
             user.sessions.shift();  // Limitar a las últimas 5 sesiones

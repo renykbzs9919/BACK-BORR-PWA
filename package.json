@@ -17,6 +17,7 @@
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "dayjs": "^1.11.13",
+    "device-detector-js": "^3.0.3",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-useragent": "^1.0.15",
@@ -27,6 +28,7 @@
     "minmaxscaler": "^1.0.1",
     "moment-timezone": "^0.5.45",
     "mongoose": "^8.6.1",
+    "node-device-detector": "^2.1.4",
     "nodemailer": "^6.9.15",
     "qrcode": "^1.5.4"
   }

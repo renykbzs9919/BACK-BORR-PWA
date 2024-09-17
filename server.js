@@ -45,6 +45,7 @@ const ventaRoutes = require('./routes/ventaRoutes');
 const categoriaRoutes = require('./routes/categoriaRoutes');
 const parametroRoutes = require('./routes/parametrosRoutes');
 const prediccionesRoutes = require('./routes/prediccionRoutes');
+const preventaRoutes = require('./routes/preventaRoutes');
 
 // Rutas de la API
 app.use('/api/users', userRoutes);
@@ -63,6 +64,7 @@ app.use('/api/ventas', ventaRoutes);
 app.use('/api/categorias', categoriaRoutes);
 app.use('/api/parametros', parametroRoutes);
 app.use('/api/predicciones', prediccionesRoutes);
+app.use('/api/preventas', preventaRoutes);
 
 // Ruta de prueba para asegurarse de que el servidor esté funcionando
 app.get('/', (req, res) => {

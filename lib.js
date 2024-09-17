@@ -102,6 +102,17 @@ const createDefaultPermissions = async () => {
         { name: 'ver_admins', description: 'Permite ver todos los administradores', group: 'Administradores' },
         { name: 'ver_clientes', description: 'Permite ver todos los clientes', group: 'Clientes' },
         { name: 'ver_trabajadores', description: 'Permite ver todos los trabajadores', group: 'Trabajadores' },
+
+        //Rutas de preventas
+        { name: 'crear_preventa', description: 'Permite crear una preventa', group: 'Preventas' },
+        { name: 'ver_preventas', description: 'Permite ver todas las preventas', group: 'Preventas' },
+        { name: 'ver_preventa_id', description: 'Permite ver una preventa por su ID', group: 'Preventas' },
+        { name: 'actualizar_preventa_id', description: 'Permite actualizar una preventa por su ID', group: 'Preventas' },
+        { name: 'eliminar_preventa_id', description: 'Permite eliminar una preventa por su ID', group: 'Preventas' },
+        { name: 'ver_preventa_cliente', description: 'Permite ver todas las preventas de un cliente', group: 'Preventas' },
+        { name: 'confirmar_entrega_preventa', description: 'Permite confirmar la entrega de una preventa', group: 'Preventas' },
+
+
     ];
 
     // Lógica para crear permisos en la base de datos (por ejemplo, insertarlos)  
