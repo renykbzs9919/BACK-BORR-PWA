@@ -34,15 +34,24 @@ router.get('/trabajadores', authMiddleware, checkPermissions('ver_trabajadores')
 
 // Rutas para registrar usuarios
 router.post('/register', authMiddleware, registerUsers);  // Registrar un nuevo usuario
+
 // Rutas para gestionar usuarios
-router.post('/', authMiddleware, checkPermissions('crear_usuario'), registerUser);  // Registrar un nuevo usuario
-router.get('/', authMiddleware, checkPermissions('ver_usuarios'), getUsers);  // Obtener todos los usuarios
-router.get('/:id', authMiddleware, checkPermissions('ver_usuario_id'), getUserById);  // Obtener un usuario por su ID
-router.put('/:id', authMiddleware, checkPermissions('actualizar_usuario_id'), updateUser);  // Actualizar un usuario por su ID
-router.delete('/:id', authMiddleware, checkPermissions('eliminar_usuario_id'), deleteUser);  // Eliminar un usuario por su ID
-router.put('/:id/permissions', authMiddleware, checkPermissions('actualizar_permisos_usuario'), updateUserPermissions);  // Actualizar permisos de un usuario por su ID
-router.get('/:id/sessions', authMiddleware, checkPermissions('ver_sesiones_usuario'), getUserSessions);  // Obtener las últimas 5 sesiones de un usuario
-router.put('/:id/unlock', authMiddleware, checkPermissions('desbloquear_cuenta'), unlockUserAccount);  // Desbloquear una cuenta de usuario
+router.post('/', authMiddleware, 
+    checkPermissions('crear_usuario'), registerUser); 
+router.get('/', authMiddleware, 
+    checkPermissions('ver_usuarios'), getUsers); 
+router.get('/:id', authMiddleware, 
+    checkPermissions('ver_usuario_id'), getUserById); 
+router.put('/:id', authMiddleware, 
+    checkPermissions('actualizar_usuario_id'), updateUser);  
+router.delete('/:id', authMiddleware, 
+    checkPermissions('eliminar_usuario_id'), deleteUser);  
+router.put('/:id/permissions', authMiddleware, 
+    checkPermissions('actualizar_permisos_usuario'), updateUserPermissions);  
+router.get('/:id/sessions', authMiddleware, 
+    checkPermissions('ver_sesiones_usuario'), getUserSessions);  
+router.put('/:id/unlock', authMiddleware, 
+    checkPermissions('desbloquear_cuenta'), unlockUserAccount); 
 
 module.exports = router;
 
